@@ -1,0 +1,41 @@
+body {
+  
+  
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #141313;
+  color: #333;
+}
+.Container {
+  
+  
+   max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #141313;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+h2 {
+  text-align: center;
+  color: #d4d4d4;
+}
+Form{
+  border: 1px solid rgb(247, 247, 247);
+  border-radius: 20px;
+  padding: 10px;
+}
+Label {
+  color: aliceblue;
+  margin: 10px;
+  
+}
+Input {
+  margin: 10px 0 5px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
