@@ -5,7 +5,7 @@ import './App.css'
 import Parameters from './Parameters'
 
 function App() {
-  const [count, setCount] = useState(0)
+  
 
   return (
     <>
