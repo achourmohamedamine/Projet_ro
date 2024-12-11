@@ -6,6 +6,10 @@ import {
   Input,
   Button,
 } from "reactstrap";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import styles from "/src/Components/Parametres/Parametres.module.css";
+
+
 
 function Parameters() {
   const [nbretype, setNbretype] = useState(1);
@@ -25,6 +29,7 @@ function Parameters() {
 
   return (
     <>
+    
       <Form>
         <FormGroup>
           <Label for="nbre_passagers">Nombre Total des passagers :</Label>
@@ -55,7 +60,7 @@ function Parameters() {
           </Input>
         </FormGroup>
 
-        <div className="wrapper"><Button onClick={handleClick}>Configurer les types d'avions</Button></div>
+        <div className={styles.wrapper}><Button onClick={handleClick}>Configurer les types d'avions</Button></div>
       </Form>
 
       {forms.length > 0 && (
@@ -106,7 +111,7 @@ function Parameters() {
                
               </React.Fragment>
             ))}
-             <div className="wrapper"><Button>Submit</Button></div>
+             <div className={styles.wrapper}><Button>Submit</Button></div>
           </Form>
         </div>
       )}
