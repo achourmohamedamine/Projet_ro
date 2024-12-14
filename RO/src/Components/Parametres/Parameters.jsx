@@ -12,106 +12,115 @@ import styles from "/src/Components/Parametres/Parametres.module.css";
 
 
 function Parameters() {
-  const [nbretype, setNbretype] = useState(1);
-  const [forms, setForms] = useState([]);
+    const [nbrematieres, setNbrematieres] = useState(1);
+    const [forms, setForms] = useState([]);
+    const array=[1,2,3,4,5,6,7,8,9,10];
 
-  const handleChange = (event) => {
-    setNbretype(event.target.value);
-  };
+    const handleChange = (event) => {
+      setNbrematieres(event.target.value);
+    };
 
-  const handleClick = () => {
-    const newForms = [];
-    for (let i = 0; i < nbretype; i++) {
-      newForms.push(i + 1);
-    }
-    setForms(newForms);
-  };
+    const handleClick = () => {
+      const newForms = [];
+      for (let i = 0; i < nbrematieres; i++) {
+        newForms.push(i + 1);
+      }
+      setForms(newForms);
+    };
 
   return (
     <>
     
       <Form>
         <FormGroup>
-          <Label for="nbre_passagers">Nombre Total des passagers :</Label>
-          <Input
-            id="nbre_passagers"
-            name="email"
-            placeholder="Ex: 1600"
-            type="text"
-          />
+        <Label for="nbre_matieres">Nombre de matières à réviser :</Label>
+        <Input
+          id="nbre_passagers"
+          name="nbre_passagers"
+          placeholder="Ex: 3"
+          type="select"
+          onChange={handleChange}
+        >
+          {array.map((nbre, index) => (
+            <option key={index} value={nbre}>
+              {nbre}  
+            </option>
+          ))}
+        </Input>
+
+          
         </FormGroup>
         <FormGroup>
-          <Label for="bagages">Poids total des bagages (tonnes) :</Label>
-          <Input id="bagages" name="bag" placeholder="Ex: 90" type="text" />
+          <Label for="temps_total">Temps total (en h):</Label>
+          <Input id="temps_total" name="temps_total" placeholder="Ex: 90" type="number" required />
         </FormGroup>
         <FormGroup>
-          <Label for="exampleSelect">Nombre de types d'avions</Label>
+          <Label for="exampleSelect">Temps minimal de revison </Label>
           <Input
             id="exampleSelect"
             name="select"
-            type="select"
-            onChange={handleChange}
+            type="number"
+            placeholder="ex : 5"
+            
           >
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-            <option>5</option>
+            
           </Input>
         </FormGroup>
 
-        <div className={styles.wrapper}><Button onClick={handleClick}>Configurer les types d'avions</Button></div>
+        <div className={styles.wrapper}><Button onClick={handleClick}>Configurer les matieres</Button></div>
       </Form>
 
       {forms.length > 0 && (
         <div style={{ marginTop: "20px" }}>
-          <h3>Configuration des types d'avions</h3>
+          <h3>Configuration matieres</h3>
           <Form>
             {forms.map((type, index) => (
               <React.Fragment key={index}>
-                <h5>Avion Type {type}</h5>
+                <h5>matiere {type}</h5>
                 <FormGroup>
-                  <Label for={`capacity-${type}`}>Capacité passagers :</Label>
+                  <Label for="nom_matieres">Nom de la matière :</Label>
                   <Input
-                    id={`capacity-${type}`}
-                    name={`capacity-${type}`}
-                    placeholder="Ex: 200"
+                    id="nom_matieres"
+                    name="nom_matieres"
+                    placeholder="Ex: physique"
                     type="text"
+                    
                   />
                 </FormGroup>
                 <FormGroup>
-                  <Label for={`baggage-${type}`}>Capacité bagages (tonnes) :</Label>
+                  <Label for={`priorité-${type}`}>Priorité de la matiere :</Label>
                   <Input
-                    id={`baggage-${type}`}
-                    name={`baggage-${type}`}
-                    placeholder="Ex: 6"
-                    type="text"
-                  />
+                    id={`priorité-${type}`}
+                    name={`priorité-${type}`}
+                    placeholder="1"
+                    type="select" >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </Input>
+                    
+                    
+                    
+                  
                 </FormGroup>
                 <FormGroup>
-                  <Label for={`cost-${type}`}>Coût de location :</Label>
+                  <Label for={`complexité-${type}`}>complexité de la matieres :</Label>
                   <Input
-                    id={`cost-${type}`}
-                    name={`cost-${type}`}
-                    placeholder="Ex: 800000"
-                    type="text"
-                  />
-                </FormGroup>
-                <FormGroup>
-                  <Label for={`max-${type}`}>
-                    Nombre maximum d'avions disponibles :
-                  </Label>
-                  <Input
-                    id={`max-${type}`}
-                    name={`max-${type}`}
-                    placeholder="Ex: 12"
-                    type="text"
-                  />
+                    id={`complexité-${type}`}
+                    name={`complexité-${type}`}
+                    placeholder="1"
+                    type="select" >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </Input>
+                  
                 </FormGroup>
                
               </React.Fragment>
             ))}
-             <div className={styles.wrapper}><Button>Submit</Button></div>
+             <div className={styles.wrapper} ><Button>Submit</Button></div>
           </Form>
         </div>
       )}
