@@ -40,7 +40,7 @@ body {
   }
   
   Input {
-    margin: 10px 0 5px;
+    
     width: 100%;
     padding: 10px;
     border: 1px solid #ddd;
@@ -55,4 +55,7 @@ body {
     justify-content: center;
     align-items: center;
   }
-  
+  #row {
+    display: flex;
+    justify-content: space-between;
+  }

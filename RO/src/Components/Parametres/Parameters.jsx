@@ -5,6 +5,8 @@ import {
   Label,
   Input,
   Button,
+  Row,
+  Col
 } from "reactstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import styles from "/src/Components/Parametres/Parametres.module.css";
@@ -75,19 +77,24 @@ function Parameters() {
           <h3>Configuration matieres</h3>
           <Form>
             {forms.map((type, index) => (
+              
               <React.Fragment key={index}>
                 <h5>matiere {type}</h5>
-                <FormGroup>
-                  <Label for="nom_matieres">Nom de la matière :</Label>
-                  <Input
-                    id="nom_matieres"
-                    name="nom_matieres"
-                    placeholder="Ex: physique"
-                    type="text"
-                    
-                  />
-                </FormGroup>
-                <FormGroup>
+                <Row className="row-cols-lg g-3 " id={styles.row}>
+                  <Col className={styles.col}>
+                    <FormGroup>
+                    <Label for="nom_matieres">Nom de la matière :</Label>
+                    <Input
+                      id={styles.nom_matieres}
+                      name="nom_matieres"
+                      placeholder="Ex: physique"
+                      type="text"
+                      
+                    /></FormGroup>
+                
+                </Col>
+                <Col>
+                  <FormGroup>
                   <Label for={`priorité-${type}`}>Priorité de la matiere :</Label>
                   <Input
                     id={`priorité-${type}`}
@@ -99,12 +106,16 @@ function Parameters() {
                         <option value="3">3</option>
                         <option value="4">4</option>
                     </Input>
+                    </FormGroup>
                     
                     
                     
                   
-                </FormGroup>
+                
+                </Col>
+                <Col>
                 <FormGroup>
+                
                   <Label for={`complexité-${type}`}>complexité de la matieres :</Label>
                   <Input
                     id={`complexité-${type}`}
@@ -116,9 +127,12 @@ function Parameters() {
                         <option value="3">3</option>
                     </Input>
                   
-                </FormGroup>
-               
+                    </FormGroup>
+                </Col>
+                </Row>
+               <hr />
               </React.Fragment>
+              
             ))}
              <div className={styles.wrapper} ><Button>Submit</Button></div>
           </Form>
