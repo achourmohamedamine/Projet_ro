@@ -10,6 +10,7 @@ import {
 } from "reactstrap";
 
 import styles from "/src/Components/Parametres/Parametres.module.css";
+import axios from 'axios';
 
 
 
@@ -75,6 +76,26 @@ function Parameters() {
           return { ...f, complexités: updatedComplexités };
         });
       };
+
+      const handleSubmit = () => {
+        // Define the API endpoint (adjust the URL as per your Flask server)
+        const API_URL = "http://127.0.0.1:5000/solve";
+      
+        // Send the formdata to the API using a POST request
+        axios
+          .post(API_URL, formdata)
+          .then((response) => {
+            // Handle success (e.g., show a success message or log the response)
+            console.log("Response from Flask API:", response.data);
+            alert("Data submitted successfully!");
+          })
+          .catch((error) => {
+            // Handle error (e.g., show an error message or log the error)
+            console.error("Error submitting data:", error);
+            alert("Failed to submit data. Please try again.");
+          });
+      };
+      
       
       
 
@@ -191,7 +212,7 @@ function Parameters() {
               </React.Fragment>
               
             ))}
-             <div className={styles.wrapper} ><Button>Submit</Button></div>
+             <div className={styles.wrapper} ><Button onClick={handleSubmit}>Submit</Button></div>
           </Form>
         </div>
       )}

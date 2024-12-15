@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from gurobipy import Model, GRB, quicksum
 
 app = Flask(__name__)
-
+CORS(app) 
 # Function to solve the optimization problem
 def solve_optimization(M, P, C, TM, TD):
     try:
@@ -55,13 +56,13 @@ def solve_optimization(M, P, C, TM, TD):
 def solve():
     try:
         # Get input data from request
-        data = request.get_json()
+        data = request.json
 
-        M = data.get("subjects")  # List of subjects
-        P = data.get("priorities")  # List of priorities
-        C = data.get("complexities")  # List of complexities
-        TM = data.get("min_time")  # Minimum time for each subject
-        TD = data.get("total_time")  # Total available time
+        M = data.get("subjects", [])  # List of subjects
+        P = [int(p) for p in data.get("priorités", [])]  # List of priorities (converted to integers)
+        C = [int(c) for c in data.get("complexités", [])]  # List of complexities (converted to integers)
+        TM = int(data.get("min_time", 0))  # Minimum time for each subject
+        TD = int(data.get("total_time", 0))  # Total available time
 
         # Input validation
         if not all([M, P, C, TM, TD]):
@@ -77,3 +78,4 @@ def solve():
 
 if __name__ == '__main__':
     app.run(debug=True)
+      
