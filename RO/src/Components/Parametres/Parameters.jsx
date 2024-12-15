@@ -8,7 +8,7 @@ import {
   Row,
   Col
 } from "reactstrap";
-import 'bootstrap/dist/css/bootstrap.min.css';
+
 import styles from "/src/Components/Parametres/Parametres.module.css";
 
 
@@ -17,9 +17,17 @@ function Parameters() {
     const [nbrematieres, setNbrematieres] = useState(1);
     const [forms, setForms] = useState([]);
     const array=[1,2,3,4,5,6,7,8,9,10];
+    const [formdata,setFormdata]=useState({
+      "subjects" : [] ,
+      "priorités" : [],
+      "complexités" : [],
+      "min_time" : "",
+      "total_time":""
+    });
 
-    const handleChange = (event) => {
+    const handleNbreChange = (event) => {
       setNbrematieres(event.target.value);
+      
     };
 
     const handleClick = () => {
@@ -29,6 +37,48 @@ function Parameters() {
       }
       setForms(newForms);
     };
+    const handletimeTotal =(event)=> {
+      setFormdata(f => ({...f ,
+        total_time : (event.target.value)
+      }));
+    
+      };
+      console.log(formdata);
+      const handletimeminimal =(event) => {
+        setFormdata (f => ({
+          ...f, 
+          min_time : (event.target.value)
+        }));
+      };
+
+
+      const handlenommatiere = (index, value) => {
+        setFormdata((f) => {
+          const updatedSubjects = [...f.subjects];
+          updatedSubjects[index] = value;
+          return { ...f, subjects: updatedSubjects };
+        });
+      };
+
+      const handlePrioritéChange = (index, value) => {
+        setFormdata((f) => {
+          const updatedPriorités = [...f.priorités];
+          updatedPriorités[index] = value;
+          return { ...f, priorités: updatedPriorités };
+        });
+      };
+
+      const handleComplexité = (index, value) => {
+        setFormdata((f) => {
+          const updatedComplexités = [...f.complexités];
+          updatedComplexités[index] = value;
+          return { ...f, complexités: updatedComplexités };
+        });
+      };
+      
+      
+
+
 
   return (
     <>
@@ -41,7 +91,7 @@ function Parameters() {
           name="nbre_passagers"
           placeholder="Ex: 3"
           type="select"
-          onChange={handleChange}
+          onChange={handleNbreChange}
         >
           {array.map((nbre, index) => (
             <option key={index} value={nbre}>
@@ -54,7 +104,7 @@ function Parameters() {
         </FormGroup>
         <FormGroup>
           <Label for="temps_total">Temps total (en h):</Label>
-          <Input id="temps_total" name="temps_total" placeholder="Ex: 90" type="number" required />
+          <Input id="temps_total" name="temps_total" placeholder="Ex: 90" type="number" required  onChange={handletimeTotal}/>
         </FormGroup>
         <FormGroup>
           <Label for="exampleSelect">Temps minimal de revison </Label>
@@ -63,6 +113,7 @@ function Parameters() {
             name="select"
             type="number"
             placeholder="ex : 5"
+            onChange={handletimeminimal}
             
           >
             
@@ -89,6 +140,7 @@ function Parameters() {
                       name="nom_matieres"
                       placeholder="Ex: physique"
                       type="text"
+                      onChange={(e) => handlenommatiere(index,e.target.value)}
                       
                     /></FormGroup>
                 
@@ -100,7 +152,9 @@ function Parameters() {
                     id={`priorité-${type}`}
                     name={`priorité-${type}`}
                     placeholder="1"
-                    type="select" >
+                    type="select" 
+                    onChange={(e) => handlePrioritéChange(index,e.target.value)}
+                    >
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -121,7 +175,10 @@ function Parameters() {
                     id={`complexité-${type}`}
                     name={`complexité-${type}`}
                     placeholder="1"
-                    type="select" >
+                    type="select" 
+                    onChange={(e)=>handleComplexité(index,e.target.value)}
+                    >
+
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>

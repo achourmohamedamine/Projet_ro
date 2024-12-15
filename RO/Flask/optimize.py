@@ -1,31 +1,79 @@
-from flask import Flask, request, jsonify # type: ignore
+from flask import Flask, request, jsonify
 from gurobipy import Model, GRB, quicksum
-import json
-app = Flask(__name__)
-from gurobipy import Model, GRB, quicksum
-M=["RO","Statistiques","Optimisation","Commerce"]
-P= [3, 2.5, 3, 1]
-C = [3, 2, 2, 2]
-TM= 1
-TD = 20
-w = [P[i] / C[i] for i in range(len(P))]
-a = TD/ sum(w)
-n=4
-model = Model("Optimisation de la révision")
-t= [model.addVar(lb=TM, ub=TD, vtype=GRB.CONTINUOUS, name=f"T_{i + 1}") for i in range(n)]
-model.setObjective(quicksum((P[i] ) * t[i] for i in range(n)), GRB.MAXIMIZE)
-model.addConstr(quicksum(t) <= TD, "Temps Disponible")
-for i in range(n):
-    model.addConstr(t[i] >= a * (P[i] / C[i]), f"ContrainteTemps neccessaire pour la complexite_{i + 1}")
-model.optimize()
 
-if model.status == GRB.OPTIMAL:
-    print("\nSolution optimale trouvée :")
-    for i in range(n):
-        time_in_hours = t[i].x
-        full_hours = int(time_in_hours)
-        minutes = int((time_in_hours - full_hours) * 60)
-        print(f"{M[i]} : Tempsapproximative = {full_hours} heures et {minutes} minutes")
-    print(f"Profit total(score)  : {model.objVal:.2f}")
-else:
-    print("\nAucune solution optimale trouvée.")
+app = Flask(__name__)
+
+# Function to solve the optimization problem
+def solve_optimization(M, P, C, TM, TD):
+    try:
+        n = len(M)
+        w = [P[i] / C[i] for i in range(n)]
+        a = TD / sum(w)
+
+        # Create the Gurobi model
+        model = Model("Optimisation de la révision")
+
+        # Decision variables
+        t = [model.addVar(lb=TM, ub=TD, vtype=GRB.CONTINUOUS, name=f"T_{i + 1}") for i in range(n)]
+
+        # Objective function
+        model.setObjective(quicksum((P[i]) * t[i] for i in range(n)), GRB.MAXIMIZE)
+
+        # Constraints
+        model.addConstr(quicksum(t) <= TD, "Temps_Disponible")
+        for i in range(n):
+            model.addConstr(t[i] >= a * (P[i] / C[i]), f"ContrainteTemps_{i + 1}")
+
+        # Optimize
+        model.optimize()
+
+        # Check for optimal solution
+        if model.status == GRB.OPTIMAL:
+            solution = []
+            for i in range(n):
+                time_in_hours = t[i].x
+                full_hours = int(time_in_hours)
+                minutes = int((time_in_hours - full_hours) * 60)
+                solution.append({
+                    "subject": M[i],
+                    "time": f"{full_hours} hours and {minutes} minutes"
+                })
+
+            return {
+                "status": "optimal",
+                "total_score": round(model.objVal, 2),
+                "schedule": solution
+            }
+        else:
+            return {"status": "no_solution", "message": "No optimal solution found."}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Flask Route to Solve Optimization
+@app.route('/solve', methods=['POST'])
+def solve():
+    try:
+        # Get input data from request
+        data = request.get_json()
+
+        M = data.get("subjects")  # List of subjects
+        P = data.get("priorities")  # List of priorities
+        C = data.get("complexities")  # List of complexities
+        TM = data.get("min_time")  # Minimum time for each subject
+        TD = data.get("total_time")  # Total available time
+
+        # Input validation
+        if not all([M, P, C, TM, TD]):
+            return jsonify({"status": "error", "message": "Invalid input data."}), 400
+
+        # Solve the optimization
+        result = solve_optimization(M, P, C, TM, TD)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
