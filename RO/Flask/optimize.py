@@ -5,7 +5,7 @@ from gurobipy import Model, GRB, quicksum
 app = Flask(__name__)
 CORS(app) 
 # Function to solve the optimization problem
-def solve_optimization(M, P, C, TM, TD):
+def solve_optimization(M, P, C, TM, TD,Cr):
     try:
         n = len(M)
         w = [P[i] / C[i] for i in range(n)]
@@ -18,13 +18,16 @@ def solve_optimization(M, P, C, TM, TD):
         t = [model.addVar(lb=TM, ub=TD, vtype=GRB.CONTINUOUS, name=f"T_{i + 1}") for i in range(n)]
 
         # Objective function
-        model.setObjective(quicksum((P[i]) * t[i] for i in range(n)), GRB.MAXIMIZE)
+        model.setObjective(quicksum((P[i]*C[i]) * t[i] for i in range(n)), GRB.MAXIMIZE)
 
         # Constraints
         model.addConstr(quicksum(t) <= TD, "Temps_Disponible")
-        for i in range(n):
-            model.addConstr(t[i] >= a * (P[i] / C[i]), f"ContrainteTemps_{i + 1}")
-
+        if(Cr=="Priorite"):
+           for i in range(n):
+                model.addConstr(t[i] >= a * (P[i] / C[i]), f"ContrainteTemps_{i + 1}")
+        elif(Cr=="Complexite"):
+            for i in range(n):
+                model.addConstr(t[i] >= a * (C[i] / P[i]), f"ContrainteTemps_{i + 1}")
         # Optimize
         model.optimize()
 
@@ -57,19 +60,19 @@ def solve():
     try:
         # Get input data from request
         data = request.json
-
-        M = data.get("subjects", [])  # List of subjects
+        Cr=data.get("critere")
+        M = data.get("tasks", [])  # List of subjects
         P = [int(p) for p in data.get("priorités", [])]  # List of priorities (converted to integers)
         C = [int(c) for c in data.get("complexités", [])]  # List of complexities (converted to integers)
         TM = int(data.get("min_time", 0))  # Minimum time for each subject
         TD = int(data.get("total_time", 0))  # Total available time
 
         # Input validation
-        if not all([M, P, C, TM, TD]):
+        if not all([M, P, C, TM, TD,Cr]):
             return jsonify({"status": "error", "message": "Invalid input data."}), 400
 
         # Solve the optimization
-        result = solve_optimization(M, P, C, TM, TD)
+        result = solve_optimization(M, P, C, TM, TD,Cr)
         return jsonify(result)
 
     except Exception as e:
