@@ -6,8 +6,8 @@ from gurobipy import GRB
 class OptimisationApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Optimisation PLNE")
-        self.root.geometry("800x600")
+        self.root.title("Optimisation PLNE - Version 3")
+        self.root.geometry("1000x600")
 
         # Variables pour stocker les données
         self.villes = []
@@ -17,7 +17,9 @@ class OptimisationApp:
         self.rentabilite_usine = {}
         self.rentabilite_entrepot = {}
         self.priorites = {}
-        self.distance_max = 0
+        self.centres_regions = []
+        self.diametre_region = 0
+        self.max_entrepots = 0
         self.budget_total = 0
 
         # Création des onglets
@@ -69,12 +71,19 @@ class OptimisationApp:
         self.budget_var = tk.StringVar()
         ttk.Entry(budget_frame, textvariable=self.budget_var).pack(side='left', padx=5)
 
-        # Distance maximale
-        dist_frame = ttk.LabelFrame(frame, text="Distance maximale", padding=10)
-        dist_frame.pack(fill='x', padx=10, pady=5)
-        ttk.Label(dist_frame, text="Distance maximale entre villes:").pack(side='left', padx=5)
-        self.distance_max_var = tk.StringVar()
-        ttk.Entry(dist_frame, textvariable=self.distance_max_var).pack(side='left', padx=5)
+        # Diamètre maximal des régions
+        diametre_frame = ttk.LabelFrame(frame, text="Diamètre des régions", padding=10)
+        diametre_frame.pack(fill='x', padx=10, pady=5)
+        ttk.Label(diametre_frame, text="Diamètre maximal des régions:").pack(side='left', padx=5)
+        self.diametre_var = tk.StringVar()
+        ttk.Entry(diametre_frame, textvariable=self.diametre_var).pack(side='left', padx=5)
+
+        # Nombre maximal d'entrepôts par région
+        entrepots_frame = ttk.LabelFrame(frame, text="Entrepôts par région", padding=10)
+        entrepots_frame.pack(fill='x', padx=10, pady=5)
+        ttk.Label(entrepots_frame, text="Nombre maximal d'entrepôts par région:").pack(side='left', padx=5)
+        self.max_entrepots_var = tk.StringVar()
+        ttk.Entry(entrepots_frame, textvariable=self.max_entrepots_var).pack(side='left', padx=5)
 
     def setup_distances_tab(self):
         self.distances_frame = ttk.Frame(self.tab_distances)
@@ -106,10 +115,11 @@ class OptimisationApp:
             self.rentabilite_usine_entries = []
             self.rentabilite_entrepot_entries = []
             self.priorite_vars = []
+            self.centre_vars = []
 
             # En-têtes
             headers = ["Ville", "Coût Usine", "Coût Entrepôt", 
-                      "Rentabilité Usine", "Rentabilité Entrepôt", "Priorité"]
+                      "Rentabilité Usine", "Rentabilité Entrepôt", "Priorité", "Centre"]
             for j, header in enumerate(headers):
                 ttk.Label(self.villes_frame, text=header).grid(row=0, column=j, padx=5, pady=5)
 
@@ -139,8 +149,12 @@ class OptimisationApp:
                 ttk.Checkbutton(self.villes_frame, variable=prio_var).grid(row=i+1, column=5, padx=5, pady=2)
                 self.priorite_vars.append(prio_var)
 
+                centre_var = tk.BooleanVar()
+                ttk.Checkbutton(self.villes_frame, variable=centre_var).grid(row=i+1, column=6, padx=5, pady=2)
+                self.centre_vars.append(centre_var)
+
             ttk.Button(self.villes_frame, text="Valider les villes", 
-                      command=self.valider_villes).grid(row=n+1, column=0, columnspan=6, pady=10)
+                      command=self.valider_villes).grid(row=n+1, column=0, columnspan=7, pady=10)
 
         except ValueError:
             messagebox.showerror("Erreur", "Veuillez entrer un nombre valide")
@@ -169,6 +183,9 @@ class OptimisationApp:
                                        for ville, entry in zip(self.villes, self.rentabilite_entrepot_entries)}
             self.priorites = {ville: int(var.get()) 
                             for ville, var in zip(self.villes, self.priorite_vars)}
+            
+            # Récupérer les centres de régions
+            self.centres_regions = [ville for ville, var in zip(self.villes, self.centre_vars) if var.get()]
 
             # Créer la matrice des distances
             self.creer_matrice_distances()
@@ -227,14 +244,18 @@ class OptimisationApp:
             if not self.villes or not self.distances:
                 raise ValueError("Veuillez d'abord saisir toutes les données nécessaires")
 
+            if not self.centres_regions:
+                raise ValueError("Veuillez sélectionner au moins un centre de région")
+
             # Récupérer les paramètres globaux
             try:
                 self.budget_total = float(self.budget_var.get())
-                self.distance_max = float(self.distance_max_var.get())
-                if self.budget_total <= 0 or self.distance_max <= 0:
+                self.diametre_region = float(self.diametre_var.get())
+                self.max_entrepots = int(self.max_entrepots_var.get())
+                if self.budget_total <= 0 or self.diametre_region <= 0 or self.max_entrepots <= 0:
                     raise ValueError()
             except ValueError:
-                raise ValueError("Le budget et la distance maximale doivent être des nombres positifs")
+                raise ValueError("Les paramètres doivent être des nombres positifs")
 
             # Créer le modèle
             m = gp.Model("Selection d'usines et entrepôts")
@@ -245,22 +266,17 @@ class OptimisationApp:
             # Variables binaires pour les entrepôts dans les villes
             y = m.addVars(self.villes, vtype=GRB.BINARY, name="entrepot_ville")
 
-            # Variables binaires pour les entrepôts entre les paires de villes
-            x_E = m.addVars(self.distances.keys(), vtype=GRB.BINARY, name="entrepot_pair")
-
             # Fonction objectif : maximiser la rentabilité
             m.setObjective(
                 gp.quicksum(self.rentabilite_usine[i] * x_U[i] for i in self.villes) +
-                gp.quicksum(self.rentabilite_entrepot[i] * y[i] for i in self.villes) +
-                gp.quicksum(self.rentabilite_entrepot[i] * x_E[i, j] for i, j in self.distances.keys()),
+                gp.quicksum(self.rentabilite_entrepot[i] * y[i] for i in self.villes),
                 GRB.MAXIMIZE
             )
 
             # Contrainte de budget total
             m.addConstr(
                 gp.quicksum(self.couts_usine[i] * x_U[i] for i in self.villes) +
-                gp.quicksum(self.couts_entrepot[i] * y[i] for i in self.villes) +
-                gp.quicksum(self.couts_entrepot[i] * x_E[i, j] for i, j in self.distances.keys()) <= self.budget_total,
+                gp.quicksum(self.couts_entrepot[i] * y[i] for i in self.villes) <= self.budget_total,
                 "Budget"
             )
 
@@ -268,14 +284,19 @@ class OptimisationApp:
             for i in self.villes:
                 m.addConstr(y[i] <= x_U[i], name=f"Entrepot_Liaison_{i}")
 
-            # Contrainte sur les entrepôts entre les villes proches
-            for (i, j) in self.distances.keys():
-                if self.distances[i, j] <= self.distance_max:
-                    m.addConstr(x_E[i, j] <= y[i] + y[j], name=f"Entrepot_Pair_{i}_{j}")
-
             # Contrainte de priorité des villes
             for i in self.villes:
                 m.addConstr(x_U[i] + y[i] >= self.priorites[i], name=f"Priorite_{i}")
+
+            # Contrainte de limitation des entrepôts par région
+            for centre in self.centres_regions:
+                region = [ville for ville in self.villes 
+                         if ville == centre or 
+                         self.distances.get(tuple(sorted((ville, centre))), float('inf')) <= self.diametre_region]
+                m.addConstr(
+                    gp.quicksum(y[i] for i in region) <= self.max_entrepots,
+                    name=f"Region_Limite_{centre}"
+                )
 
             # Résolution
             m.optimize()
@@ -284,14 +305,13 @@ class OptimisationApp:
             self.resultats_text.delete(1.0, tk.END)
             if m.status == GRB.OPTIMAL:
                 self.resultats_text.insert(tk.END, "=== Solution optimale trouvée ===\n\n")
+
+                # Afficher les usines et entrepôts
                 for i in self.villes:
                     if x_U[i].x > 0.5:
                         self.resultats_text.insert(tk.END, f"Une usine est construite à {i}.\n")
                     if y[i].x > 0.5:
                         self.resultats_text.insert(tk.END, f"Un entrepôt est construit à {i}.\n")
-                    for j in self.villes:
-                        if (i, j) in self.distances.keys() and x_E[i, j].x > 0.5:
-                            self.resultats_text.insert(tk.END, f"Un entrepôt est construit entre {i} et {j}.\n")
                 self.resultats_text.insert(tk.END, f"\nRentabilité maximale : {m.objVal:.2f}")
             else:
                 self.resultats_text.insert(tk.END, "Aucune solution optimale trouvée.\n")

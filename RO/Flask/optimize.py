@@ -5,6 +5,14 @@ from gurobipy import Model, GRB, quicksum
 app = Flask(__name__)
 CORS(app) 
 # Function to solve the optimization problem
+
+
+
+
+
+
+
+
 def solve_optimization(M, P, C, TM, TD,Cr):
     try:
         n = len(M)
@@ -53,6 +61,14 @@ def solve_optimization(M, P, C, TM, TD,Cr):
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+
+
+
+
+
+
 
 # Flask Route to Solve Optimization
 @app.route('/solve', methods=['POST'])
