@@ -13,11 +13,12 @@ import styles from "./Ville.module.css";
 import DistanceMatrix from '../Matrix/DistanceMatrix '
 import axios from 'axios';
 
-
 function Ville() {
   const [cities, setCities] = useState([]);
   const [nbreville, setNbreville] = useState(1);
   const [forms, setForms] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [apiResult, setApiResult] = useState(null);
   const [data, setData] = useState({
     villes: [],
     distances: {},
@@ -30,7 +31,6 @@ function Ville() {
     diametre_region: "",
     max_entrepots: "",
     priorites: {}
-    
   });
 
   const handleChange = (event) => {
@@ -53,7 +53,6 @@ function Ville() {
   const handleInputChange = (key, field, index, value) => {
     setData((prev) => {
       const newData = { ...prev };
-  
       if (field === "villes") {
         newData.villes[index] = value;
       } else if (field === "centres_regions") {
@@ -63,60 +62,53 @@ function Ville() {
           newData.centres_regions = newData.centres_regions.filter((v) => v !== key);
         }
       } else if (field === "priorites") {
-        newData.priorites[key] = value ? 1 : 0;  // This will ensure 0 when unchecked
+        newData.priorites[key] = value ? 1 : 0;
       } else {
         newData[field][key] = value;
       }
-  
       return newData;
     });
   };
-  
+
   const handleDistancesSubmit = (submittedDistances) => {
-    setData((prev) => ({
+    setData(prev => ({
       ...prev,
       distances: submittedDistances
     }));
   };
-  
-  const handleSubmit = () => {
-    const API_URL = "http://127.0.0.1:5000/optimiser";
-  
-    const formattedData = {
-      villes: data.villes.filter(Boolean), // Filter out any empty cities
-      distances: data.distances,
-      rentabilite_usine: data.rentabilite_usine,
-      rentabilite_entrepot: data.rentabilite_entrepot,
-      couts_usine: data.couts_usine,
-      couts_entrepot: data.couts_entrepot,
-      budget_total: Number(data.budget_total),
-      diametre_region: Number(data.diametre_region),
-      max_entrepots: Number(data.max_entrepots),
-      priorites: data.priorites,
-      centres_regions: data.centres_regions // Assuming this is handled properly in your form
-    };
-  
-    axios
-      .post(API_URL, formattedData)
-      .then((response) => {
-        console.log("Response from API:", response.data);
-        alert("Data submitted successfully!");
-      })
-      .catch((error) => {
-        console.error("Error submitting data:", error);
-        alert("Failed to submit data. Please try again.");
-      });
-  };
-  
-  
+
   const handleGlobalInputChange = (key, value) => {
-    setData((prev) => ({
+    setData(prev => ({
       ...prev,
       [key]: value
     }));
   };
-
   console.log(data);
+  const handleSubmit = async () => {
+    try {
+      const response = await axios.post("http://127.0.0.1:5000/optimiser", {
+        villes: data.villes.filter(Boolean),
+        distances: data.distances,
+        rentabilite_usine: data.rentabilite_usine,
+        rentabilite_entrepot: data.rentabilite_entrepot,
+        couts_usine: data.couts_usine,
+        couts_entrepot: data.couts_entrepot,
+        budget_total: Number(data.budget_total),
+        diametre_region: Number(data.diametre_region),
+        max_entrepots: Number(data.max_entrepots),
+        priorites: data.priorites,
+        centres_regions: data.centres_regions
+      });
+      
+      setApiResult(response.data);
+      console.log(response.data);
+      setShowModal(true);
+    } catch (error) {
+      console.error("Error:", error);
+      setApiResult({ error: "Une erreur s'est produite lors de la soumission" });
+      setShowModal(true);
+    }
+  };
 
   return (
     <>
@@ -177,7 +169,7 @@ function Ville() {
             {forms.map((_, index) => (
               <div key={index}>
                 <h5>Ville {index + 1}</h5>
-                <Row className="row-cols-lg-auto g-3 align-items-center">
+                <Row className="row-cols-lg-auto g-3 align-items-center ">
                   <Col>
                     <FormGroup>
                       <Label for={`nomville_${index}`} className="visually-hidden">
@@ -324,14 +316,92 @@ function Ville() {
         </div>
       )}
 
-      {forms.length > 0 && data.villes.length > 1 && ( <>
-        <DistanceMatrix cities={data.villes.filter(Boolean)} onSubmit={handleDistancesSubmit} />
-        <div className={styles.wrapper}>
-          <Button onClick={handleSubmit}>Submit</Button>
-        </div>
-      </>)}
+      {forms.length > 0 && data.villes.length > 1 && (
+        <>
+          <DistanceMatrix cities={data.villes.filter(Boolean)} onSubmit={handleDistancesSubmit} />
+          <div className={styles.wrapper}>
+            <Button onClick={handleSubmit}>Submit</Button>
+          </div>
+        </>
+      )}
 
-      
+      {showModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '20px',
+            borderRadius: '5px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '20px'
+            }}>
+              <h3>Résultats</h3>
+              <button 
+                onClick={() => setShowModal(false)}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {apiResult?.error ? (
+              <p style={{color: 'red'}}>{apiResult.error}</p>
+            ) : (
+              <div>
+                {apiResult?.usines && apiResult.usines.length > 0 && (
+                  <div>
+                    <h4>Usines:</h4>
+                    <ul>
+                      {apiResult.usines.map((usine, i) => (
+                        <li key={i}>{usine}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {apiResult?.entrepots && apiResult.entrepots.length > 0 && (
+                  <div>
+                    <h4>Entrepôts:</h4>
+                    <ul>
+                      {apiResult.entrepots.map((entrepot, i) => (
+                        <li key={i}>{entrepot}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                
+                
+               
+
+                {(!apiResult?.usines?.length && !apiResult?.entrepots?.length) && (
+                  <p>Aucune solution trouvée</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

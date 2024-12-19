@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Input, Button } from 'reactstrap';
+import './DistanceMatrix.css'
 
 const DistanceMatrix = ({ cities = [], onSubmit }) => {
   const [distances, setDistances] = useState({});
