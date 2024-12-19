@@ -7,7 +7,7 @@ import {
   Button,
 } from "reactstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import styles from "/src/Components/Parametres/Parametres.module.css";
+import styles from "./Parametres.module.css";
 
 
 
