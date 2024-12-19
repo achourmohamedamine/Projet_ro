@@ -1,328 +1,207 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
 import gurobipy as gp
 from gurobipy import GRB
 
-class OptimisationApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Optimisation PLNE - Version 3")
-        self.root.geometry("1000x600")
-
-        # Variables pour stocker les données
-        self.villes = []
-        self.distances = {}
-        self.couts_usine = {}
-        self.couts_entrepot = {}
-        self.rentabilite_usine = {}
-        self.rentabilite_entrepot = {}
-        self.priorites = {}
-        self.centres_regions = []
-        self.diametre_region = 0
-        self.max_entrepots = 0
-        self.budget_total = 0
-
-        # Création des onglets
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(fill='both', expand=True, padx=10, pady=5)
-
-        # Onglet 1: Configuration des villes
-        self.tab_villes = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_villes, text='Villes')
-        self.setup_villes_tab()
-
-        # Onglet 2: Paramètres globaux
-        self.tab_params = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_params, text='Paramètres')
-        self.setup_params_tab()
-
-        # Onglet 3: Distances
-        self.tab_distances = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_distances, text='Distances')
-        self.setup_distances_tab()
-
-        # Onglet 4: Résultats
-        self.tab_resultats = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_resultats, text='Résultats')
-        self.setup_resultats_tab()
-
-    def setup_villes_tab(self):
-        frame = ttk.LabelFrame(self.tab_villes, text="Configuration des villes", padding=10)
-        frame.pack(fill='both', expand=True, padx=10, pady=5)
-
-        # Nombre de villes
-        ttk.Label(frame, text="Nombre de villes:").grid(row=0, column=0, padx=5, pady=5)
-        self.nb_villes_var = tk.StringVar()
-        self.nb_villes_entry = ttk.Entry(frame, textvariable=self.nb_villes_var)
-        self.nb_villes_entry.grid(row=0, column=1, padx=5, pady=5)
-        ttk.Button(frame, text="Valider", command=self.creer_champs_villes).grid(row=0, column=2, padx=5, pady=5)
-
-        self.villes_frame = ttk.Frame(frame)
-        self.villes_frame.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
-
-    def setup_params_tab(self):
-        frame = ttk.Frame(self.tab_params)
-        frame.pack(fill='both', expand=True, padx=10, pady=5)
-
-        # Budget total
-        budget_frame = ttk.LabelFrame(frame, text="Budget", padding=10)
-        budget_frame.pack(fill='x', padx=10, pady=5)
-        ttk.Label(budget_frame, text="Budget total:").pack(side='left', padx=5)
-        self.budget_var = tk.StringVar()
-        ttk.Entry(budget_frame, textvariable=self.budget_var).pack(side='left', padx=5)
-
-        # Diamètre maximal des régions
-        diametre_frame = ttk.LabelFrame(frame, text="Diamètre des régions", padding=10)
-        diametre_frame.pack(fill='x', padx=10, pady=5)
-        ttk.Label(diametre_frame, text="Diamètre maximal des régions:").pack(side='left', padx=5)
-        self.diametre_var = tk.StringVar()
-        ttk.Entry(diametre_frame, textvariable=self.diametre_var).pack(side='left', padx=5)
-
-        # Nombre maximal d'entrepôts par région
-        entrepots_frame = ttk.LabelFrame(frame, text="Entrepôts par région", padding=10)
-        entrepots_frame.pack(fill='x', padx=10, pady=5)
-        ttk.Label(entrepots_frame, text="Nombre maximal d'entrepôts par région:").pack(side='left', padx=5)
-        self.max_entrepots_var = tk.StringVar()
-        ttk.Entry(entrepots_frame, textvariable=self.max_entrepots_var).pack(side='left', padx=5)
-
-    def setup_distances_tab(self):
-        self.distances_frame = ttk.Frame(self.tab_distances)
-        self.distances_frame.pack(fill='both', expand=True, padx=10, pady=5)
-
-    def setup_resultats_tab(self):
-        frame = ttk.Frame(self.tab_resultats)
-        frame.pack(fill='both', expand=True, padx=10, pady=5)
-
-        ttk.Button(frame, text="Lancer l'optimisation", command=self.optimiser).pack(pady=10)
-        self.resultats_text = tk.Text(frame, height=20, width=60)
-        self.resultats_text.pack(pady=10)
-
-    def creer_champs_villes(self):
+def saisir_villes():
+    while True:
         try:
-            n = int(self.nb_villes_var.get())
+            n = int(input("Entrez le nombre de villes : "))
             if n <= 0:
-                messagebox.showerror("Erreur", "Le nombre de villes doit être positif")
-                return
-
-            # Nettoyer le frame existant
-            for widget in self.villes_frame.winfo_children():
-                widget.destroy()
-
-            # Créer les champs pour chaque ville
-            self.ville_entries = []
-            self.cout_usine_entries = []
-            self.cout_entrepot_entries = []
-            self.rentabilite_usine_entries = []
-            self.rentabilite_entrepot_entries = []
-            self.priorite_vars = []
-            self.centre_vars = []
-
-            # En-têtes
-            headers = ["Ville", "Coût Usine", "Coût Entrepôt", 
-                      "Rentabilité Usine", "Rentabilité Entrepôt", "Priorité", "Centre"]
-            for j, header in enumerate(headers):
-                ttk.Label(self.villes_frame, text=header).grid(row=0, column=j, padx=5, pady=5)
-
-            # Champs de saisie
+                print("Le nombre de villes doit être positif.")
+                continue
+            villes = []
             for i in range(n):
-                ville_entry = ttk.Entry(self.villes_frame)
-                ville_entry.grid(row=i+1, column=0, padx=5, pady=2)
-                self.ville_entries.append(ville_entry)
-
-                cout_u_entry = ttk.Entry(self.villes_frame)
-                cout_u_entry.grid(row=i+1, column=1, padx=5, pady=2)
-                self.cout_usine_entries.append(cout_u_entry)
-
-                cout_e_entry = ttk.Entry(self.villes_frame)
-                cout_e_entry.grid(row=i+1, column=2, padx=5, pady=2)
-                self.cout_entrepot_entries.append(cout_e_entry)
-
-                rent_u_entry = ttk.Entry(self.villes_frame)
-                rent_u_entry.grid(row=i+1, column=3, padx=5, pady=2)
-                self.rentabilite_usine_entries.append(rent_u_entry)
-
-                rent_e_entry = ttk.Entry(self.villes_frame)
-                rent_e_entry.grid(row=i+1, column=4, padx=5, pady=2)
-                self.rentabilite_entrepot_entries.append(rent_e_entry)
-
-                prio_var = tk.BooleanVar()
-                ttk.Checkbutton(self.villes_frame, variable=prio_var).grid(row=i+1, column=5, padx=5, pady=2)
-                self.priorite_vars.append(prio_var)
-
-                centre_var = tk.BooleanVar()
-                ttk.Checkbutton(self.villes_frame, variable=centre_var).grid(row=i+1, column=6, padx=5, pady=2)
-                self.centre_vars.append(centre_var)
-
-            ttk.Button(self.villes_frame, text="Valider les villes", 
-                      command=self.valider_villes).grid(row=n+1, column=0, columnspan=7, pady=10)
-
+                ville = input(f"Entrez le nom de la ville {i+1} : ")
+                villes.append(ville)
+            return villes
         except ValueError:
-            messagebox.showerror("Erreur", "Veuillez entrer un nombre valide")
+            print("Veuillez entrer un nombre valide.")
 
-    def valider_villes(self):
-        try:
-            self.villes = []
-            for entry in self.ville_entries:
-                ville = entry.get().strip()
-                if not ville:
-                    raise ValueError("Tous les noms de villes doivent être remplis")
-                self.villes.append(ville)
-
-            # Vérifier les doublons
-            if len(self.villes) != len(set(self.villes)):
-                raise ValueError("Les noms de villes doivent être uniques")
-
-            # Récupérer les autres données
-            self.couts_usine = {ville: float(entry.get()) 
-                              for ville, entry in zip(self.villes, self.cout_usine_entries)}
-            self.couts_entrepot = {ville: float(entry.get()) 
-                                 for ville, entry in zip(self.villes, self.cout_entrepot_entries)}
-            self.rentabilite_usine = {ville: float(entry.get()) 
-                                    for ville, entry in zip(self.villes, self.rentabilite_usine_entries)}
-            self.rentabilite_entrepot = {ville: float(entry.get()) 
-                                       for ville, entry in zip(self.villes, self.rentabilite_entrepot_entries)}
-            self.priorites = {ville: int(var.get()) 
-                            for ville, var in zip(self.villes, self.priorite_vars)}
-            
-            # Récupérer les centres de régions
-            self.centres_regions = [ville for ville, var in zip(self.villes, self.centre_vars) if var.get()]
-
-            # Créer la matrice des distances
-            self.creer_matrice_distances()
-            
-            messagebox.showinfo("Succès", "Données des villes enregistrées avec succès")
-            self.notebook.select(2)  # Aller à l'onglet des distances
-
-        except ValueError as e:
-            messagebox.showerror("Erreur", str(e))
-
-    def creer_matrice_distances(self):
-        # Nettoyer le frame des distances
-        for widget in self.distances_frame.winfo_children():
-            widget.destroy()
-
-        n = len(self.villes)
-        self.distance_entries = {}
-
-        # Créer la matrice des distances
-        ttk.Label(self.distances_frame, text="Matrice des distances").grid(row=0, column=0, columnspan=n+1, pady=10)
-
-        # En-têtes des colonnes
-        for j, ville in enumerate(self.villes):
-            ttk.Label(self.distances_frame, text=ville).grid(row=1, column=j+1, padx=5, pady=5)
-
-        # En-têtes des lignes et champs de saisie
-        for i, ville1 in enumerate(self.villes):
-            ttk.Label(self.distances_frame, text=ville1).grid(row=i+2, column=0, padx=5, pady=5)
-            for j, ville2 in enumerate(self.villes):
-                if i < j:  # Seulement la moitié supérieure de la matrice
-                    entry = ttk.Entry(self.distances_frame, width=8)
-                    entry.grid(row=i+2, column=j+1, padx=5, pady=2)
-                    self.distance_entries[(ville1, ville2)] = entry
-
-        ttk.Button(self.distances_frame, text="Valider les distances", 
-                  command=self.valider_distances).grid(row=n+2, column=0, columnspan=n+1, pady=10)
-
-    def valider_distances(self):
-        try:
-            self.distances = {}
-            for (ville1, ville2), entry in self.distance_entries.items():
-                distance = float(entry.get())
-                if distance < 0:
-                    raise ValueError(f"La distance entre {ville1} et {ville2} doit être positive")
-                self.distances[(ville1, ville2)] = distance
-
-            messagebox.showinfo("Succès", "Distances enregistrées avec succès")
-            self.notebook.select(3)  # Aller à l'onglet des résultats
-
-        except ValueError as e:
-            messagebox.showerror("Erreur", str(e))
-
-    def optimiser(self):
-        try:
-            # Vérifier que toutes les données sont présentes
-            if not self.villes or not self.distances:
-                raise ValueError("Veuillez d'abord saisir toutes les données nécessaires")
-
-            if not self.centres_regions:
-                raise ValueError("Veuillez sélectionner au moins un centre de région")
-
-            # Récupérer les paramètres globaux
+def saisir_donnees_ville(villes, message):
+    donnees = {}
+    for ville in villes:
+        while True:
             try:
-                self.budget_total = float(self.budget_var.get())
-                self.diametre_region = float(self.diametre_var.get())
-                self.max_entrepots = int(self.max_entrepots_var.get())
-                if self.budget_total <= 0 or self.diametre_region <= 0 or self.max_entrepots <= 0:
-                    raise ValueError()
+                valeur = float(input(f"{message} pour {ville} : "))
+                donnees[ville] = valeur
+                break
             except ValueError:
-                raise ValueError("Les paramètres doivent être des nombres positifs")
+                print("Veuillez entrer un nombre valide.")
+    return donnees
 
-            # Créer le modèle
-            m = gp.Model("Selection d'usines et entrepôts")
+def saisir_distances(villes):
+    distances = {}
+    print("\nEntrez les distances entre les villes :")
+    for i in range(len(villes)):
+        for j in range(i+1, len(villes)):
+            while True:
+                try:
+                    dist = float(input(f"Distance entre {villes[i]} et {villes[j]} : "))
+                    if dist < 0:
+                        print("La distance doit être positive.")
+                        continue
+                    distances[tuple(sorted((villes[i], villes[j])))] = dist
+                    break
+                except ValueError:
+                    print("Veuillez entrer un nombre valide.")
+    return distances
 
-            # Variables binaires pour les usines
-            x_U = m.addVars(self.villes, vtype=GRB.BINARY, name="usine")
+def saisir_priorites(villes):
+    priorites = {}
+    print("\nEntrez les priorités des villes (1 pour prioritaire, 0 sinon) :")
+    for ville in villes:
+        while True:
+            try:
+                prio = int(input(f"Priorité pour {ville} (0 ou 1) : "))
+                if prio not in [0, 1]:
+                    print("La priorité doit être 0 ou 1.")
+                    continue
+                priorites[ville] = prio
+                break
+            except ValueError:
+                print("Veuillez entrer 0 ou 1.")
+    return priorites
 
-            # Variables binaires pour les entrepôts dans les villes
-            y = m.addVars(self.villes, vtype=GRB.BINARY, name="entrepot_ville")
-
-            # Fonction objectif : maximiser la rentabilité
-            m.setObjective(
-                gp.quicksum(self.rentabilite_usine[i] * x_U[i] for i in self.villes) +
-                gp.quicksum(self.rentabilite_entrepot[i] * y[i] for i in self.villes),
-                GRB.MAXIMIZE
-            )
-
-            # Contrainte de budget total
-            m.addConstr(
-                gp.quicksum(self.couts_usine[i] * x_U[i] for i in self.villes) +
-                gp.quicksum(self.couts_entrepot[i] * y[i] for i in self.villes) <= self.budget_total,
-                "Budget"
-            )
-
-            # Contrainte de liaison entre entrepôt et usine
-            for i in self.villes:
-                m.addConstr(y[i] <= x_U[i], name=f"Entrepot_Liaison_{i}")
-
-            # Contrainte de priorité des villes
-            for i in self.villes:
-                m.addConstr(x_U[i] + y[i] >= self.priorites[i], name=f"Priorite_{i}")
-
-            # Contrainte de limitation des entrepôts par région
-            for centre in self.centres_regions:
-                region = [ville for ville in self.villes 
-                         if ville == centre or 
-                         self.distances.get(tuple(sorted((ville, centre))), float('inf')) <= self.diametre_region]
-                m.addConstr(
-                    gp.quicksum(y[i] for i in region) <= self.max_entrepots,
-                    name=f"Region_Limite_{centre}"
-                )
-
-            # Résolution
-            m.optimize()
-
-            # Affichage des résultats
-            self.resultats_text.delete(1.0, tk.END)
-            if m.status == GRB.OPTIMAL:
-                self.resultats_text.insert(tk.END, "=== Solution optimale trouvée ===\n\n")
-
-                # Afficher les usines et entrepôts
-                for i in self.villes:
-                    if x_U[i].x > 0.5:
-                        self.resultats_text.insert(tk.END, f"Une usine est construite à {i}.\n")
-                    if y[i].x > 0.5:
-                        self.resultats_text.insert(tk.END, f"Un entrepôt est construit à {i}.\n")
-                self.resultats_text.insert(tk.END, f"\nRentabilité maximale : {m.objVal:.2f}")
+def choisir_centres(villes):
+    print("\n=== Sélection des centres des régions ===")
+    centres = []
+    while True:
+        print("\nListe des villes disponibles :")
+        for i, ville in enumerate(villes):
+            print(f"{i+1}. {ville}")
+        try:
+            choix = int(input("Entrez le numéro de la ville choisie comme centre (0 pour terminer) : "))
+            if choix == 0:
+                if not centres:
+                    print("Vous devez sélectionner au moins un centre.")
+                    continue
+                break
+            if 1 <= choix <= len(villes):
+                centre = villes[choix-1]
+                if centre in centres:
+                    print("Cette ville est déjà sélectionnée comme centre.")
+                else:
+                    centres.append(centre)
+                    print(f"{centre} ajouté comme centre de région.")
             else:
-                self.resultats_text.insert(tk.END, "Aucune solution optimale trouvée.\n")
-                self.resultats_text.insert(tk.END, "Vérifiez les contraintes du problème.")
+                print("Choix invalide. Veuillez entrer un numéro valide.")
+        except ValueError:
+            print("Veuillez entrer un numéro valide.")
+    return centres
 
-        except ValueError as e:
-            messagebox.showerror("Erreur", str(e))
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Une erreur est survenue : {str(e)}")
+def main():
+    # Saisie des données
+    print("=== Configuration du problème d'optimisation ===")
+    villes = saisir_villes()
+
+    print("\nSaisie des coûts des usines")
+    couts_usine = saisir_donnees_ville(villes, "Coût de l'usine")
+
+    print("\nSaisie des coûts des entrepôts")
+    couts_entrepot = saisir_donnees_ville(villes, "Coût de l'entrepôt")
+
+    print("\nSaisie des rentabilités des usines")
+    rentabilite_usine = saisir_donnees_ville(villes, "Rentabilité de l'usine")
+
+    print("\nSaisie des rentabilités des entrepôts")
+    rentabilite_entrepot = saisir_donnees_ville(villes, "Rentabilité de l'entrepôt")
+
+    while True:
+        try:
+            budget_total = float(input("\nEntrez le budget total : "))
+            if budget_total <= 0:
+                print("Le budget doit être positif.")
+                continue
+            break
+        except ValueError:
+            print("Veuillez entrer un nombre valide.")
+
+    distances = saisir_distances(villes)
+
+    while True:
+        try:
+            diametre_region = float(input("\nEntrez le diamètre maximal des régions : "))
+            if diametre_region <= 0:
+                print("Le diamètre doit être positif.")
+                continue
+            break
+        except ValueError:
+            print("Veuillez entrer un nombre valide.")
+
+    while True:
+        try:
+            max_entrepots = int(input("\nEntrez le nombre maximal d'entrepôts par région : "))
+            if max_entrepots <= 0:
+                print("Le nombre maximal d'entrepôts doit être positif.")
+                continue
+            break
+        except ValueError:
+            print("Veuillez entrer un nombre valide.")
+
+    priorites = saisir_priorites(villes)
+    centres_regions = choisir_centres(villes)
+
+    # Création du modèle
+    m = gp.Model("Selection d'usines et entrepôts")
+
+    # Variables binaires pour les usines
+    x = m.addVars(villes, vtype=GRB.BINARY, name="usine")
+
+    # Variables binaires pour les entrepôts dans les villes
+    y = m.addVars(villes, vtype=GRB.BINARY, name="entrepot_ville")
+
+    # Fonction objectif : maximiser la rentabilité
+    m.setObjective(
+        gp.quicksum(rentabilite_usine[i] * x[i] for i in villes) +
+        gp.quicksum(rentabilite_entrepot[i] * y[i] for i in villes),
+        GRB.MAXIMIZE
+    )
+
+    # Contrainte de budget total
+    m.addConstr(
+        gp.quicksum(couts_usine[i] * x[i] for i in villes) +
+        gp.quicksum(couts_entrepot[i] * y[i] for i in villes) <= budget_total,
+        "Budget"
+    )
+
+    # Contrainte de liaison entre entrepôt et usine
+    for i in villes:
+        m.addConstr(y[i] <= x[i], name=f"Entrepot_Liaison_{i}")
+
+    # Contrainte de priorité des villes
+    for i in villes:
+        m.addConstr(x[i] + y[i] >= priorites[i], name=f"Priorite_{i}")
+
+    # Contrainte de limitation des entrepôts par région
+    for centre in centres_regions:
+        region = [ville for ville in villes 
+                 if ville == centre or 
+                 distances.get(tuple(sorted((ville, centre))), float('inf')) <= diametre_region]
+        print(f"\nRégion de {centre}:")
+        for ville in region:
+            if ville != centre:
+                dist = distances[tuple(sorted((ville, centre)))]
+                print(f"- {ville} (distance: {dist:.2f})")
+        m.addConstr(
+            gp.quicksum(y[i] for i in region) <= max_entrepots,
+            name=f"Region_Limite_{centre}"
+        )
+
+    # Résolution
+    m.optimize()
+
+    # Affichage des résultats
+    print("\n=== Résultats de l'optimisation ===")
+    if m.status == GRB.OPTIMAL:
+        print("\nSolution optimale trouvée :")
+        for i in villes:
+            if x[i].x > 0.5:
+                print(f"Une usine est construite à {i}.")
+            if y[i].x > 0.5:
+                print(f"Un entrepôt est construit à {i}.")
+        print(f"\nRentabilité maximale : {m.objVal:.2f}")
+    else:
+        print("Aucune solution optimale trouvée.")
+        print("Vérifiez les contraintes du problème.")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = OptimisationApp(root)
-    root.mainloop()
+    main()
