@@ -261,32 +261,32 @@ class OptimisationApp:
             m = gp.Model("Selection d'usines et entrepôts")
 
             # Variables binaires pour les usines
-            x_U = m.addVars(self.villes, vtype=GRB.BINARY, name="usine")
+            x = m.addVars(self.villes, vtype=GRB.BINARY, name="usine")
 
             # Variables binaires pour les entrepôts dans les villes
             y = m.addVars(self.villes, vtype=GRB.BINARY, name="entrepot_ville")
 
             # Fonction objectif : maximiser la rentabilité
             m.setObjective(
-                gp.quicksum(self.rentabilite_usine[i] * x_U[i] for i in self.villes) +
+                gp.quicksum(self.rentabilite_usine[i] * x[i] for i in self.villes) +
                 gp.quicksum(self.rentabilite_entrepot[i] * y[i] for i in self.villes),
                 GRB.MAXIMIZE
             )
 
             # Contrainte de budget total
             m.addConstr(
-                gp.quicksum(self.couts_usine[i] * x_U[i] for i in self.villes) +
+                gp.quicksum(self.couts_usine[i] * x[i] for i in self.villes) +
                 gp.quicksum(self.couts_entrepot[i] * y[i] for i in self.villes) <= self.budget_total,
                 "Budget"
             )
 
             # Contrainte de liaison entre entrepôt et usine
             for i in self.villes:
-                m.addConstr(y[i] <= x_U[i], name=f"Entrepot_Liaison_{i}")
+                m.addConstr(y[i] <= x[i], name=f"Entrepot_Liaison_{i}")
 
             # Contrainte de priorité des villes
             for i in self.villes:
-                m.addConstr(x_U[i] + y[i] >= self.priorites[i], name=f"Priorite_{i}")
+                m.addConstr(x[i] + y[i] >= self.priorites[i], name=f"Priorite_{i}")
 
             # Contrainte de limitation des entrepôts par région
             for centre in self.centres_regions:
@@ -308,7 +308,7 @@ class OptimisationApp:
 
                 # Afficher les usines et entrepôts
                 for i in self.villes:
-                    if x_U[i].x > 0.5:
+                    if x[i].x > 0.5:
                         self.resultats_text.insert(tk.END, f"Une usine est construite à {i}.\n")
                     if y[i].x > 0.5:
                         self.resultats_text.insert(tk.END, f"Un entrepôt est construit à {i}.\n")
