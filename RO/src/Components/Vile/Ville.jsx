@@ -124,7 +124,7 @@ function Ville() {
           />
         </FormGroup>
         <FormGroup>
-          <Label for="distance">Distance maximale entre les villes (km) :</Label>
+          <Label for="distance">Diamètre de région (km) :</Label>
           <Input
             id="distance_max"
             name="distance"

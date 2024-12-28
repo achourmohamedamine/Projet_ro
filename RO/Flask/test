@@ -1,64 +1,54 @@
-from gurobipy import Model, GRB, quicksum
+from gurobipy import Model, GRB
+from math import ceil
 
-# Input Data
-M = ["p", "c","d"]  # Subjects
-P = [1, 1,2]  # Priorities
-C = [3, 3,3]  # Complexities
-TD = 15  # Total available time
-TM = 1  # Minimum time per subject
+# Données d'exemple
+n = 5  # Nombre de tâches
+M = 3  # Temps maximal par période
+T = 20  # Temps total disponible
+v = [1, 2, 3, 2, 1]  # Valeur des tâches
 
-def solve_optimization(M, P, C, TM, TD):
-    try:
-        n = len(M)
-        w = [C[i] * P[i] for i in range(n)]
-        a = TD / sum(w)
+# Création du modèle
+model = Model("Task_Scheduling")
 
-        # Create the Gurobi model
-        model = Model("Optimisation de la révision")
+# Variables de décision
+x = model.addVars(n, vtype=GRB.CONTINUOUS, name="x")  # Durée totale allouée à chaque tâche
+y = model.addVars(n, n, vtype=GRB.CONTINUOUS, name="y")  # Temps alloué à chaque tâche par période
+z = model.addVars(n, vtype=GRB.INTEGER, name="z")  # Nombre de périodes nécessaires pour chaque tâche
+b = model.addVars(n, n, vtype=GRB.BINARY, name="b")  # Variable binaire pour activer une période
 
-        # Decision variables
-        t = [model.addVar(lb=TM, ub=TD, vtype=GRB.CONTINUOUS, name=f"T_{i + 1}") for i in range(n)]
+# Fonction objectif
+model.setObjective(sum(v[i] * x[i] for i in range(n)), GRB.MAXIMIZE)
 
-        # Objective function
-        model.setObjective(quicksum(w[i] * t[i] for i in range(n)), GRB.MAXIMIZE)
+# Contraintes
+# Limitation du temps total
+model.addConstr(sum(x[i] for i in range(n)) <= T, "Total_Time")
 
-        # Constraints
-        model.addConstr(quicksum(t) <= TD, "Temps_Disponible")
-        for i in range(n):
-            model.addConstr(t[i] >= TM, f"ContrainteTemps_{i + 1}")
+# Définir les contraintes pour le nombre de périodes nécessaires pour chaque tâche
+for i in range(n):
+    model.addConstr(z[i] >= x[i] / M, f"Periods_Task_{i}")
 
-        # Optimize
-        for i in range(n):
-            for j in range(i + 1, n):
-                if P[i] == P[j] and C[i] == C[j]:
-                    model.addConstr(t[i] == t[j], f"EqualTime_{i}_{j}")
-        model.optimize()
+# Temps total alloué à chaque tâche
+for i in range(n):
+    model.addConstr(sum(y[i, k] for k in range(n)) == x[i], f"Task_{i}_Time_Allocation")
 
-        # Check for optimal solution
-        if model.status == GRB.OPTIMAL:
-            solution = []
-            for i in range(n):
-                time_in_hours = t[i].x
-                full_hours = int(time_in_hours)
-                minutes = int(round((time_in_hours - full_hours) * 60))  # Fix for minutes calculation
-                solution.append({
-                    "subject": M[i],
-                    "time": f"{full_hours} hours and {minutes} minutes"
-                })
+# Limitation du temps par période et activation avec big-M
+for i in range(n):
+    for k in range(n):
+        # Contraindre y[i, k] à être au plus M * b[i, k]
+        model.addConstr(y[i, k] <= M * b[i, k], f"Max_Period_Time_{i}_{k}")
+        # Assurer que b[i, k] est activé uniquement si k < z[i]
+        model.addConstr(k + 1 <= z[i] + (1 - b[i, k]) * n, f"Activation_{i}_{k}")
 
-            return {
-                "status": "optimal",
-                "total_score": round(model.objVal, 2),
-                "schedule": solution
-            }
-        else:
-            return {"status": "no_solution", "message": "No optimal solution found."}
+# Optimisation
+model.optimize()
 
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-# Run the function with the given data
-result = solve_optimization(M, P, C, TM, TD)
-
-# Print the result
-print(result)
+# Affichage des résultats
+if model.status == GRB.OPTIMAL:
+    for i in range(n):
+        # Affichage de la durée décidée pour la tâche i
+        print(f"Tâche {i + 1}: Durée décidée = {x[i].x:.2f} unités de temps")
+        
+        # Affichage des temps alloués pour chaque période de la tâche i
+        for k in range(n):  # On itère sur les périodes nécessaires
+            if b[i, k].x > 0.5:  # Si la période est active
+                print(f"  Période {k + 1}: Temps alloué = {y[i, k].x:.2f} unités de temps")

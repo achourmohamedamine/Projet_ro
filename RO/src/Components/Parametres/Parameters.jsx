@@ -253,7 +253,7 @@ function TaskPlanning() {
         </FormGroup>
 
         <div className={styles.wrapper}>
-          <Button onClick={handleClick} color="primary">
+          <Button onClick={handleClick}>
             Caractériser vos tâches !
           </Button>
         </div>
@@ -325,7 +325,7 @@ function TaskPlanning() {
               </React.Fragment>
             ))}
             <div className={styles.wrapper}>
-              <Button onClick={handleSubmit} color="success">
+              <Button onClick={handleSubmit} >
                 Optimiser la planification
               </Button>
             </div>

@@ -2,7 +2,7 @@ import styles from "/src/Components/Header/Header.module.css";
 function Header(){
     return (<>
         <div className={styles.header}>
-            <h1>Welcome to our page please select a problem to solve!</h1></div>
+            <h1>Bienvenue dans notre interface : choisissez un probleme parmi les deux </h1></div>
     
     </>);
 }

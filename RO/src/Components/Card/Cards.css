@@ -1,3 +1,55 @@
-Col {
-    height: 100px;
-}
+.cards-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 50px;
+    padding: 50px;
+  }
+  
+  .custom-card {
+    width: 500px; /* Augmente la largeur des cartes */
+    height: 600px; /* Augmente la hauteur des cartes */
+    text-align: center;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    margin-top: 300px;
+    background-color: #fff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Assure une répartition entre les sections */
+  }
+  
+  .custom-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  
+  .custom-card button {
+    background-color: #5088c3;
+    border: none;
+    color: white;
+    padding: 10px 50px;
+    border-radius: 50px;
+    transition: background-color 0.3s ease;
+    align-self: center; /* Centre le bouton */
+  }
+  
+  .custom-card button:hover {
+    background-color: #1b1d20;
+  }
+  .card-title {
+    color: #131d63;
+    font-size: 30px; /* Augmente la taille du titre */
+    font-weight: bold; /* Texte en gras pour le titre */
+    margin-bottom: 10px; /* Ajoute un espace sous le titre */
+  }
+  
+  .card-text {
+    font-size: 18px; /* Augmente la taille du texte de la carte */
+    color: #0a0a0a; /* Couleur plus douce pour le texte */
+    line-height: 1.6; /* Meilleure hauteur de ligne pour lisibilité */
+  }
