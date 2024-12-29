@@ -25,11 +25,12 @@ import styles from "/src/Components/Parametres/Parametres.module.css";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 function TaskPlanning() {
+  const [critere,setCritere]=useState("");
   const [nbretaches, setNbretaches] = useState(1);
   const [forms, setForms] = useState([]);
   const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const [formdata, setFormdata] = useState({
-    critere: "Priorite",
+    critere: "Tache_Continue",
     tasks: [],
     priorités: [1],
     complexités: [1],
@@ -121,6 +122,7 @@ function TaskPlanning() {
       ...f,
       critere: event.target.value,
     }));
+    setCritere(event.target.value);
   };
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
@@ -207,8 +209,8 @@ function TaskPlanning() {
             type="select"
             onChange={handleselect}
           >
-            <option value="Priorite">Priorité</option>
-            <option value="Complexite">Complexité</option>
+            <option value="Tache_Continue">Tache Continue</option>
+            <option value="Tache_Repartie">Tache Repartie</option>
           </Input>
         </FormGroup>
 
@@ -300,26 +302,24 @@ function TaskPlanning() {
                       </Input>
                     </FormGroup>
                   </Col>
+                  {critere !="Tache_Continue" && 
                   <Col>
                     <FormGroup>
-                      <Label for={`complexité-${type}`}>
-                        Complexité de la tâche :
+                      <Label for={`Temps Max-${type}`}>
+                        Temps max de la tache :
                       </Label>
                       <Input
-                        id={`complexité-${type}`}
-                        name={`complexité-${type}`}
+                        id={`Temps_max-${type}`}
+                        name={`Temps_max-${type}`}
                         placeholder="1"
-                        type="select"
+                        type="number"
                         onChange={(e) =>
                           handleComplexité(index, e.target.value)
                         }
                       >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
                       </Input>
                     </FormGroup>
-                  </Col>
+                  </Col>}
                 </Row>
                 <hr />
               </React.Fragment>
