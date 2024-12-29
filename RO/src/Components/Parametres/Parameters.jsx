@@ -33,8 +33,8 @@ function TaskPlanning() {
     critere: "Tache_Continue",
     tasks: [],
     priorités: [1],
-    complexités: [1],
-    min_time: "",
+    max_period: [1],
+    Tmin : [],
     total_time: "",
   });
   const [schedule, setSchedule] = useState([]);
@@ -67,6 +67,7 @@ function TaskPlanning() {
     }
   };
 
+
   const handleNbreChange = (event) => {
     setNbretaches(event.target.value);
   };
@@ -86,12 +87,7 @@ function TaskPlanning() {
     }));
   };
 
-  const handletimeminimal = (event) => {
-    setFormdata((f) => ({
-      ...f,
-      min_time: event.target.value,
-    }));
-  };
+  
 
   const handlenomtask = (index, value) => {
     setFormdata((f) => {
@@ -109,11 +105,11 @@ function TaskPlanning() {
     });
   };
 
-  const handleComplexité = (index, value) => {
+  const handleTempsMax = (index, value) => {
     setFormdata((f) => {
-      const updatedComplexités = [...f.complexités];
-      updatedComplexités[index] = value;
-      return { ...f, complexités: updatedComplexités };
+      const updatedTempsMax = [...f.max_period];
+      updatedTempsMax[index] = value;
+      return { ...f, max_period: updatedTempsMax };
     });
   };
 
@@ -124,62 +120,87 @@ function TaskPlanning() {
     }));
     setCritere(event.target.value);
   };
+  const handleTempsMin=(index,value)=> {
+    setFormdata((f)=> {
+      const updatedTempsMin =[...f.Tmin]
+      updatedTempsMin[index]=value;
+      return {...f,Tmin: updatedTempsMin};
+    });
+  };
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
   const handleSubmit = () => {
     const API_URL = "http://127.0.0.1:5000/solve";
-
     
     console.log('Submitting formdata:', formdata);
 
     axios
       .post(API_URL, formdata)
       .then((response) => {
-        if (response.data.schedule) {
+        console.log(response.data);
+        if (response.data.status === "optimal") {
+          const scheduleData = response.data.schedule;
+          setSchedule(scheduleData);
           
-          console.log('Received schedule:', response.data.schedule);
-          
-          setSchedule(response.data.schedule);
-          const newChartData = {
-            labels: response.data.schedule.map((item) => item.subject),
-            datasets: [
-              {
-                label: 'Temps par tâche',
-                data: response.data.schedule.map((item) => parseFloat(item.time)),
+          if (critere === "Tache_Continue") {
+            const newChartData = {
+              labels: scheduleData.map(item => item.task),
+              datasets: [{
+                data: scheduleData.map(item => item.allocated_time),
                 backgroundColor: [
-                  'rgba(0, 0, 0, 0.8)',
-                  'rgba(117, 200, 255, 0.8)',
-                  'rgba(168, 127, 22, 0.14)',
+                  'rgba(54, 162, 235, 0.8)',
+                  'rgba(255, 99, 132, 0.8)',
+                  'rgba(255, 206, 86, 0.8)',
                   'rgba(75, 192, 192, 0.8)',
                   'rgba(153, 102, 255, 0.8)',
                   'rgba(255, 159, 64, 0.8)',
-                  'rgba(255, 99, 132, 0.8)',
-                  'rgba(54, 162, 235, 0.8)',
-                  'rgba(255, 206, 86, 0.8)',
-                  'rgba(75, 192, 192, 0.8)',
+                  'rgba(199, 199, 199, 0.8)',
+                  'rgba(83, 102, 255, 0.8)',
+                  'rgba(40, 159, 64, 0.8)',
+                  'rgba(210, 99, 132, 0.8)',
                 ],
                 borderColor: [
-                  'rgb(0, 0, 0)',
-                  'rgb(0, 0, 0)',
-                  'rgb(0, 0, 0)',
-                  'rgb(0, 0, 0)',
-                  'rgb(0, 0, 0)',
-                  'rgb(0, 0, 0)',
-                  'rgba(255, 99, 132, 1)',
-                  'rgba(54, 162, 235, 1)',
-                  'rgba(255, 206, 86, 1)',
-                  'rgba(75, 192, 192, 1)',
+                  'rgb(54, 162, 235)',
+                  'rgb(255, 99, 132)',
+                  'rgb(255, 206, 86)',
+                  'rgb(75, 192, 192)',
+                  'rgb(153, 102, 255)',
+                  'rgb(255, 159, 64)',
+                  'rgb(199, 199, 199)',
+                  'rgb(83, 102, 255)',
+                  'rgb(40, 159, 64)',
+                  'rgb(210, 99, 132)',
                 ],
                 borderWidth: 1,
-              },
-            ],
-          };
-          
-         
-          console.log('Setting chart data:', newChartData);
-          
-          setChartData(newChartData);
+              }],
+            };
+            setChartData(newChartData);
+          } else {
+            // For Tache_Repartie, create chart data from total allocated time
+            const newChartData = {
+              labels: scheduleData.map(item => item.task),
+              datasets: [{
+                data: scheduleData.map(item => item.allocated_time),
+                backgroundColor: [
+                  'rgba(54, 162, 235, 0.8)',
+                  'rgba(255, 99, 132, 0.8)',
+                  'rgba(255, 206, 86, 0.8)',
+                  'rgba(75, 192, 192, 0.8)',
+                  'rgba(153, 102, 255, 0.8)',
+                ],
+                borderColor: [
+                  'rgb(54, 162, 235)',
+                  'rgb(255, 99, 132)',
+                  'rgb(255, 206, 86)',
+                  'rgb(75, 192, 192)',
+                  'rgb(153, 102, 255)',
+                ],
+                borderWidth: 1,
+              }],
+            };
+            setChartData(newChartData);
+          }
           setModalMessage("");
         } else {
           setModalMessage("Aucune solution trouvée pour ces paramètres");
@@ -194,7 +215,46 @@ function TaskPlanning() {
           "Une erreur s'est produite lors du traitement de votre demande"
         );
         setIsModalOpen(true);
+        
       });
+      
+  };
+  const renderPeriodicTaskDetails = (task) => {
+    // Add safety check for periods
+    if (!task || !task.periods || !Array.isArray(task.periods)) {
+      return null;
+    }
+
+    // Only show periods that have non-zero time allocation
+    const nonZeroPeriods = task.periods.filter(period => period.time_allocated > 0);
+
+    if (nonZeroPeriods.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mt-2">
+        <h6 className="font-weight-bold">Répartition par période:</h6>
+        <div className="table-responsive">
+          <table className={`${styles.table} table-sm styles.table-bordere`}>
+            <thead>
+              <tr>
+                <th >Période</th>
+                <th >Temps alloué (h)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {nonZeroPeriods.map((period, idx) => (
+                <tr key={idx}>
+                  <td>{period.period}</td>
+                  <td>{Number(period.time_allocated).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -206,7 +266,7 @@ function TaskPlanning() {
             id="critère"
             name="critère"
             placeholder="------"
-            type="select"
+            type="select" 
             onChange={handleselect}
           >
             <option value="Tache_Continue">Tache Continue</option>
@@ -240,17 +300,6 @@ function TaskPlanning() {
             type="number"
             required
             onChange={handletimeTotal}
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <Label for="temps_minimal">Temps minimal de la tâche :</Label>
-          <Input
-            id="temps_minimal"
-            name="temps_minimal"
-            type="number"
-            placeholder="Ex: 5"
-            onChange={handletimeminimal}
           />
         </FormGroup>
 
@@ -302,11 +351,27 @@ function TaskPlanning() {
                       </Input>
                     </FormGroup>
                   </Col>
+                  <Col>
+                    <FormGroup>
+                      <Label for={`Temps Min-${type}`}>
+                        Temps min:
+                      </Label>
+                      <Input
+                        id={`Temps_min-${type}`}
+                        name={`Temps_min-${type}`}
+                        placeholder="1"
+                        type="number"
+                        onChange={(e)=> handleTempsMin(index,e.target.value)}>
+                        
+                      
+                      </Input>
+                    </FormGroup>
+                  </Col>
                   {critere !="Tache_Continue" && 
                   <Col>
                     <FormGroup>
                       <Label for={`Temps Max-${type}`}>
-                        Temps max de la tache :
+                        Temps_max :
                       </Label>
                       <Input
                         id={`Temps_max-${type}`}
@@ -314,7 +379,7 @@ function TaskPlanning() {
                         placeholder="1"
                         type="number"
                         onChange={(e) =>
-                          handleComplexité(index, e.target.value)
+                          handleTempsMax(index, e.target.value)
                         }
                       >
                       </Input>
@@ -333,7 +398,7 @@ function TaskPlanning() {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} toggle={toggleModal} size="lg">
+<Modal isOpen={isModalOpen} toggle={toggleModal} size="lg">
         <ModalHeader toggle={toggleModal}>
           Résultat de la planification
         </ModalHeader>
@@ -346,20 +411,24 @@ function TaskPlanning() {
                 {schedule.map((item, index) => (
                   <div key={index} className="mb-3 p-3 border rounded">
                     <div className="font-weight-bold mb-2">
-                      Tâche: {item.subject}
+                      Tâche: {item.task}
                     </div>
-                    <div>Durée: {item.time}h</div>
+                    <div>Durée totale: {item.allocated_time}h</div>
+                    {critere === "Tache_Repartie" && renderPeriodicTaskDetails(item)}
                   </div>
                 ))}
               </div>
               <div className="col-md-6">
                 {chartData && (
-                  <div style={{ height: '500px', width: '100%', position: 'relative' }}>
-                    
+                  <div style={{ height: '400px', width: '100%', position: 'relative' }}>
+                    <h5 className="text-center mb-3">
+                      {critere === "Tache_Continue" ? 
+                        "Répartition du temps total" : 
+                        "Répartition du temps total par tâche"}
+                    </h5>
                     <Doughnut 
-                      data={chartData} 
+                      data={chartData}
                       options={chartOptions}
-                      height={400}
                     />
                   </div>
                 )}

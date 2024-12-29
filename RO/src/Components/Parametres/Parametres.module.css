@@ -59,3 +59,24 @@ body {
     display: flex;
     justify-content: space-between;
   }
+  .th {
+    color: #0f0f0f;
+  }
+  table {
+    color: black;
+    border:1px solid  #0f0f0f;
+  }
+  tbody {
+    color: #0f0f0f;
+  }
+  .table th{
+    border: 1px solid #100e0e;
+    padding: 8px;
+    text-align: center;
+    color: rgb(17, 17, 17);
+    background-color: transparent;
+  }
+  .table td {
+    color: black;
+    border: 1PX solid #100e0e;
+  }

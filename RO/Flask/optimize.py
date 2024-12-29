@@ -107,9 +107,9 @@ def solve():
         data = request.json
         Cr = data.get("critere")  # "PlanificationComplete" or "PlanificationPériodique"
         M = data.get("tasks", [])  # List of task names or identifiers
-        P = [int(p) for p in data.get("priorités", [])]  # List of priorities
-        Tmin = [int(c) for c in data.get("Tmin", [])]  # List of tm
-        TD = int(data.get("total_time", 0))  # Total available time
+        P = [float(p) for p in data.get("priorités", [])]  # List of priorities
+        Tmin = [float(c) for c in data.get("Tmin", [])]  # List of tm
+        TD = float(data.get("total_time", 0))  # Total available time
 
         # Input validation
         if not all([M, P,Tmin, TD, Cr]):
@@ -117,12 +117,12 @@ def solve():
         
         n = len(M)
         
-        if Cr == "PlanificationComplete":
+        if Cr == "Tache_Continue":
             v = P  # Valeur des tâches est donnée par les priorités
             result = solve_complete_scheduling(n, M,TD, Tmin, v)
         
-        elif Cr == "PlanificationPériodique":
-            Max = int(data.get("max_period", 0)) 
+        else :  
+            Max = [float(c) for c in data.get("max_period",[])] 
             result = solve_periodic_scheduling(n, M,Max, TD,Tmin, P)
         
         return jsonify(result)
